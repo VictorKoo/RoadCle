@@ -4,17 +4,19 @@
 import {StyleSheet, Platform, StatusBar, Dimensions} from 'react-native';
 import data from './config.json';
 const {height, width} = Dimensions.get('screen');
-export default StyleSheet.create({
+const GS = StyleSheet.create({
   droidSafeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   global: {
-    backgroundColor: data.primaryBGColor,
-    color: data.primaryFGColor,
+    backgroundColor: data.grayL,
+    color: data.orangeL,
   },
   /**Screen's height */
   sHeight: height,
   /**Screen's width */
   sWidth: width,
 });
+
+export default GS;

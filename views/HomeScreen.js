@@ -33,7 +33,7 @@ import {
 
 import {SwipeablePanel} from 'rn-swipeable-panel';
 
-import GlobalStyles from '../common/GlobalStyles';
+import GS from '../common/GlobalStyles';
 
 import Config from '../common/config.json';
 
@@ -44,7 +44,7 @@ class HomeScreen extends React.Component {
   /** React Navigation 配置 */
   static navigationOptions = {
     tabBarVisible: false,
-    header: null,
+    headerShown: false,
   };
   constructor(props) {
     super(props);
@@ -64,8 +64,9 @@ class HomeScreen extends React.Component {
     }
   }
   /**PPP */
-  _handlePress() {
+  _handlePressMe() {
     console.log('Pressed');
+    this.props.navigation.push('AboutMe');
   }
   _handlePressStart() {
     this.setState({
@@ -75,18 +76,19 @@ class HomeScreen extends React.Component {
   }
   render() {
     this._log('Rending');
+    this._log(GS);
     return (
       <>
         <StatusBar
           barStyle="default"
           translucent={true}
-          backgroundColor={Config.primaryBGColor + '88'}
+          backgroundColor={GS.global.backgroundColor + '88'}
         />
-        <SafeAreaView style={[GlobalStyles.global, styles.container]}>
+        <SafeAreaView style={[GS.global, styles.container]}>
           <MapView
             style={styles.mapView}
-            width={GlobalStyles.sWidth}
-            height={GlobalStyles.sHeight - 15}
+            width={GS.sWidth}
+            height={GS.sHeight - 15}
             zoom={18}
             zoomControlsVisible={true}
             mapType={MapTypes.NORMAL}
@@ -103,7 +105,7 @@ class HomeScreen extends React.Component {
           </SwipeablePanel>
           {/* <PanelBottom isActive={this.state.isBottomPanelActive} /> */}
           <TouchableOpacity
-            onPress={this._handlePress}
+            onPress={this._handlePressMe.bind(this)}
             style={[styles.buttonInfo]}>
             <Text>Me</Text>
           </TouchableOpacity>
@@ -137,28 +139,28 @@ const styles = StyleSheet.create({
   },
   /**?? */
   buttonInfo: {
-    top: GlobalStyles.sHeight * 0.08,
-    left: GlobalStyles.sWidth * 0.08,
+    top: GS.sHeight * 0.08,
+    left: GS.sWidth * 0.08,
     position: 'absolute',
-    width: GlobalStyles.sWidth * 0.15,
-    height: GlobalStyles.sHeight * 0.05,
+    width: GS.sWidth * 0.15,
+    height: GS.sHeight * 0.05,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GlobalStyles.global.color,
+    backgroundColor: GS.global.color,
     borderRadius: 20,
   },
   buttonStart: {
     bottom: 100,
     position: 'absolute',
-    width: GlobalStyles.sWidth * 0.5,
-    height: GlobalStyles.sHeight * 0.1,
+    width: GS.sWidth * 0.5,
+    height: GS.sHeight * 0.1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GlobalStyles.global.color + 'dd',
+    backgroundColor: GS.global.color + 'dd',
     borderRadius: 50,
   },
   panelBottom: {
-    height: GlobalStyles.sHeight * 0.8,
+    height: GS.sHeight * 0.8,
   },
 });
 
