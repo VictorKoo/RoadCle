@@ -1,17 +1,16 @@
 /**
  * An App for road bike assistant
+ * Router
  *
  * @format
  * @flow strict-local
  */
 
-import React from 'react';
-
 import {createAppContainer} from 'react-navigation';
 
 import {createStackNavigator} from 'react-navigation-stack';
 
-import {HomeScreen, AboutMe} from './views';
+import {HomeScreen, AboutMe, Login} from './views';
 
 const AppNavigator = createStackNavigator({
   Home: {
@@ -19,6 +18,9 @@ const AppNavigator = createStackNavigator({
   },
   AboutMe: {
     screen: AboutMe,
+  },
+  Login: {
+    screen: Login,
   },
 });
 

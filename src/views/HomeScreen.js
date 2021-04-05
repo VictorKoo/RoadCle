@@ -21,7 +21,7 @@ import {
   onPress,
   // Button,
 } from 'react-native';
-
+import {connect} from 'react-redux';
 import {
   BaiduMapManager,
   MapView,
@@ -30,11 +30,11 @@ import {
   Overlay,
   MapApp,
 } from 'react-native-baidu-map';
-
-import {SwipeablePanel} from 'rn-swipeable-panel';
-
+// import {SwipeablePanel} from 'rn-swipeable-panel';
 import GS from '../common/GlobalStyles';
-
+import Content from '../components/Content';
+import {SwipeablePanel} from '../components/SwipablePanel';
+import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 
 // Only for iOS
@@ -49,8 +49,13 @@ class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      center: {},
+      location: {},
       isBottomPanelActive: false,
-      content: () => {},
+      /**面板信息 */
+      contentData: {
+        speed: 0,
+      },
       noBackgroundOpacity: true,
     };
   }
@@ -63,20 +68,42 @@ class HomeScreen extends React.Component {
       throw new Error('Trying to log a Null Pointer');
     }
   }
-  /**PPP */
+  /**Press Me button */
   _handlePressMe() {
     console.log('Pressed');
     this.props.navigation.push('AboutMe');
   }
+  /**Press Start button */
   _handlePressStart() {
     this.setState({
       isBottomPanelActive: this.state.isBottomPanelActive ? false : true,
     });
     this._log(this.state.isBottomPanelActive);
   }
+  /**Locate now */
+  _locateOnce = () => {
+    console.log('Locate');
+    Geolocation.getCurrentPosition()
+      .then((data) => {
+        this.setState({
+          // zoom: 18,
+          markers: [
+            {
+              latitude: data.latitude,
+              longitude: data.longitude,
+              title: '我的位置',
+            },
+          ],
+          center: data,
+          location: data,
+        });
+      })
+      .catch((error) => {
+        console.warn(error, 'error');
+      });
+  };
   render() {
     this._log('Rending');
-    this._log(GS);
     return (
       <>
         <StatusBar
@@ -85,29 +112,42 @@ class HomeScreen extends React.Component {
           backgroundColor={GS.global.backgroundColor + '88'}
         />
         <SafeAreaView style={[GS.global, styles.container]}>
-          <MapView
-            style={styles.mapView}
-            width={GS.sWidth}
-            height={GS.sHeight - 15}
-            zoom={18}
-            zoomControlsVisible={true}
-            mapType={MapTypes.NORMAL}
-            zoomGesturesEnabled={true}
-            scrollGesturesEnabled={true}
-            center={Config.center}
-          />
-          <SwipeablePanel
-            style={styles.panelBottom}
+          <View style={styles.mapView}>
+            <MapView
+              width={GS.sWidth}
+              height={GS.sHeight - 150}
+              zoom={18}
+              zoomControlsVisible={true}
+              mapType={MapTypes.NORMAL}
+              zoomGesturesEnabled={true}
+              scrollGesturesEnabled={true}
+              center={this.state.center}
+              markers={this.state.markers}
+              locationData={this.state.location}
+              showsUserLocation={true}
+            />
+          </View>
+          {/* <SwipeablePanel
+            // children={}
+            style={styles.bottomPanel}
             isActive={this.state.isBottomPanelActive}
             noBackgroundOpacity={this.state.noBackgroundOpacity}
+            allowTouchOutside={true}
+            // closeOnTouchOutside={true}
+            fullWidth={true}
             onClose={() => this.setState({isBottomPanelActive: false})}>
-            {this.state.content()}
-          </SwipeablePanel>
+            <Content data={this.state.contentData} />
+          </SwipeablePanel> */}
           {/* <PanelBottom isActive={this.state.isBottomPanelActive} /> */}
+          <BottomPanel
+            data={this.state.contentData}
+            isActive={this.state.isBottomPanelActive}
+            onClose={() => this.setState({isBottomPanelActive: false})}
+          />
           <TouchableOpacity
             onPress={this._handlePressMe.bind(this)}
             style={[styles.buttonInfo]}>
-            <Text>Me</Text>
+            <Text>我</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.buttonStart}
@@ -116,7 +156,7 @@ class HomeScreen extends React.Component {
               style={{
                 fontSize: 30,
               }}>
-              Start
+              开始记录
             </Text>
           </TouchableOpacity>
         </SafeAreaView>
@@ -125,6 +165,7 @@ class HomeScreen extends React.Component {
   }
   componentDidMount() {
     this._log('Started');
+    this._locateOnce();
   }
 }
 
@@ -137,7 +178,7 @@ const styles = StyleSheet.create({
   mapView: {
     alignItems: 'center',
   },
-  /**?? */
+  /**个人信息按钮 */
   buttonInfo: {
     top: GS.sHeight * 0.08,
     left: GS.sWidth * 0.08,
@@ -150,7 +191,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   buttonStart: {
-    bottom: 100,
+    bottom: 40,
     position: 'absolute',
     width: GS.sWidth * 0.5,
     height: GS.sHeight * 0.1,
@@ -159,9 +200,17 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color + 'dd',
     borderRadius: 50,
   },
-  panelBottom: {
-    height: GS.sHeight * 0.8,
+  bottomPanel: {
+    // height: GS.sHeight * 0.7,
   },
 });
 
-export default HomeScreen;
+const mapStateToProps = (state) => ({
+  user: state.userReducer.user,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  // addName: (data) => dispatch(addName(data)),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

@@ -28,6 +28,7 @@ const Item = ({title, id}) => {
       onPress={() => {
         console.log(title);
         console.log(id);
+        // console.log(state.userData.name);
       }}>
       <Text style={styles.title}>{title}</Text>
     </TouchableOpacity>
