@@ -22,10 +22,10 @@ let loggerMiddleware = createLogger();
 export default function configureStore() {
   const enhancers = compose(applyMiddleware(thunk, loggerMiddleware));
   // 未持久化的store
-  const store = createStore(rootReducer);
+  // const store = createStore(rootReducer);
   // 处理后的 reducers 需要作为参数传递在 createStore 中
   const pStore = createStore(persistedReducer, enhancers);
   // 持久化 pStore
   let persistor = persistStore(pStore);
-  return {store, pStore, persistor};
+  return {pStore, persistor};
 }

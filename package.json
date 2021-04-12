@@ -16,6 +16,7 @@
     "@react-native-async-storage/async-storage": "github:react-native-async-storage/async-storage",
     "@react-native-community/masked-view": "^0.1.10",
     "@react-navigation/native": "github:react-navigation/native",
+    "axios": "^0.21.1",
     "info": "0.0.6-beta.0",
     "react": "16.13.1",
     "react-dom": "^17.0.1",

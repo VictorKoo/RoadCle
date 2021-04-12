@@ -89,32 +89,38 @@ class AboutMe extends Component {
   }
   render() {
     return (
-      <SafeAreaView style={styles.container}>
+      <>
         <StatusBar />
-        <View style={styles.list}>
-          <SectionList
-            sections={this.state.DATA}
-            keyExtractor={(item, index) => item + index}
-            renderItem={({item}) => (
-              <Item
-                title={item.title}
-                mathod={item.mathod}
-                navigation={this.props.navigation}
+        <View style={styles.container}>
+          <View style={styles.leftCol}>
+            <TouchableOpacity
+              onPress={() => {
+                this.props.navigation.goBack();
+              }}
+              style={[styles.buttonBack]}>
+              <Text>Back</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.rightCol}>
+            <View style={styles.list}>
+              <SectionList
+                sections={this.state.DATA}
+                keyExtractor={(item, index) => item + index}
+                renderItem={({item}) => (
+                  <Item
+                    title={item.title}
+                    mathod={item.mathod}
+                    navigation={this.props.navigation}
+                  />
+                )}
+                renderSectionHeader={({section: {title}}) => (
+                  <Text style={styles.header}>{title}</Text>
+                )}
               />
-            )}
-            renderSectionHeader={({section: {title}}) => (
-              <Text style={styles.header}>{title}</Text>
-            )}
-          />
+            </View>
+          </View>
         </View>
-        <TouchableOpacity
-          onPress={() => {
-            this.props.navigation.goBack();
-          }}
-          style={[styles.buttonBack]}>
-          <Text>Back</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+      </>
     );
   }
 }
@@ -125,8 +131,8 @@ const styles = StyleSheet.create({
     paddingTop: StatusBar.currentHeight,
     // marginHorizontal: 20,
     flexDirection: 'row',
-    alignContent: 'flex-end',
-    justifyContent: 'flex-end',
+    // alignContent: 'flex-end',
+    // justifyContent: 'flex-end',
   },
   item: {
     backgroundColor: Config.grayL,
@@ -166,6 +172,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignContent: 'center',
     justifyContent: 'flex-end',
+  },
+  leftCol: {
+    flex: 3,
+    // backgroundColor: 'orange',
+  },
+  rightCol: {
+    flex: 7,
+    backgroundColor: Config.orangeL + '11',
+    paddingTop: 20,
   },
 });
 
