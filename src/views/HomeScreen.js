@@ -29,6 +29,7 @@ import {
   Geolocation,
   Overlay,
   MapApp,
+  Polyline,
 } from 'react-native-baidu-map';
 // import {SwipeablePanel} from 'rn-swipeable-panel';
 import GS from '../common/GlobalStyles';
@@ -36,6 +37,7 @@ import Content from '../components/Content';
 import {SwipeablePanel} from '../components/SwipablePanel';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
+import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
@@ -51,7 +53,8 @@ class HomeScreen extends React.Component {
     this.state = {
       center: {},
       location: {},
-      isBottomPanelActive: false,
+      markers: [],
+      // isBottomPanelActive: false,
       /**面板信息 */
       contentData: {
         speed: 0,
@@ -75,10 +78,8 @@ class HomeScreen extends React.Component {
   }
   /**Press Start button */
   _handlePressStart() {
-    this.setState({
-      isBottomPanelActive: this.state.isBottomPanelActive ? false : true,
-    });
-    this._log(this.state.isBottomPanelActive);
+    this.props.startTrack();
+    this._log(this.props.isTracking);
   }
   /**Locate now */
   _locateOnce = () => {
@@ -115,8 +116,8 @@ class HomeScreen extends React.Component {
           <View style={styles.mapView}>
             <MapView
               width={GS.sWidth}
-              height={GS.sHeight - 150}
-              zoom={18}
+              height={GS.sHeight}
+              zoom={25}
               zoomControlsVisible={true}
               mapType={MapTypes.NORMAL}
               zoomGesturesEnabled={true}
@@ -124,40 +125,26 @@ class HomeScreen extends React.Component {
               center={this.state.center}
               markers={this.state.markers}
               locationData={this.state.location}
-              showsUserLocation={true}
-            />
+              showsUserLocation={true}>
+              {/* <Polyline points={this.props.trackPoint} /> */}
+            </MapView>
           </View>
-          {/* <SwipeablePanel
-            // children={}
-            style={styles.bottomPanel}
-            isActive={this.state.isBottomPanelActive}
-            noBackgroundOpacity={this.state.noBackgroundOpacity}
-            allowTouchOutside={true}
-            // closeOnTouchOutside={true}
-            fullWidth={true}
-            onClose={() => this.setState({isBottomPanelActive: false})}>
-            <Content data={this.state.contentData} />
-          </SwipeablePanel> */}
-          {/* <PanelBottom isActive={this.state.isBottomPanelActive} /> */}
           <BottomPanel
             data={this.state.contentData}
-            isActive={this.state.isBottomPanelActive}
-            onClose={() => this.setState({isBottomPanelActive: false})}
+            isActive={this.props.isTracking}
+            onClose={() => {
+              this.props.endTrack();
+            }}
           />
           <TouchableOpacity
             onPress={this._handlePressMe.bind(this)}
-            style={[styles.buttonInfo]}>
+            style={[styles.infoButton]}>
             <Text>我</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.buttonStart}
+            style={styles.startButton}
             onPress={this._handlePressStart.bind(this)}>
-            <Text
-              style={{
-                fontSize: 30,
-              }}>
-              开始记录
-            </Text>
+            <Text style={styles.startButtonText}>开始骑行</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </>
@@ -179,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   /**个人信息按钮 */
-  buttonInfo: {
+  infoButton: {
     top: GS.sHeight * 0.08,
     left: GS.sWidth * 0.08,
     position: 'absolute',
@@ -190,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color,
     borderRadius: 20,
   },
-  buttonStart: {
+  startButton: {
     bottom: 40,
     position: 'absolute',
     width: GS.sWidth * 0.5,
@@ -200,6 +187,10 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color + 'dd',
     borderRadius: 50,
   },
+  startButtonText: {
+    fontSize: 30,
+    // fontFamily: 'GOST',
+  },
   bottomPanel: {
     // height: GS.sHeight * 0.7,
   },
@@ -207,10 +198,15 @@ const styles = StyleSheet.create({
 
 const mapStateToProps = (state) => ({
   user: state.userReducer.user,
+  isTracking: state.trackReducer.isTracking,
+  record_id: state.trackReducer.record_id,
+  trackPoint: state.trackReducer.trackPoint,
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  // addName: (data) => dispatch(addName(data)),
+  endTrack: () => dispatch(endTrack()),
+  startTrack: () => dispatch(startTrack()),
+  addPoint: (p, id) => dispatch(addPoint(p, id)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

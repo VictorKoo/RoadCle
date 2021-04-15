@@ -1,5 +1,4 @@
 /**设备状态 */
-
 import uuidV4 from 'uuid/v4';
 const initialState = {
   device: {
@@ -13,16 +12,6 @@ const deviceReducer = (state = initialState, action) => {
     case 'INIT_DEVICE': {
       return {
         device_id: uuidV4(),
-      };
-    }
-    case 'START_TRACK': {
-      return {
-        device: {isTracking: true},
-      };
-    }
-    case 'END_TRACK': {
-      return {
-        device: {isTracking: false},
       };
     }
     default:

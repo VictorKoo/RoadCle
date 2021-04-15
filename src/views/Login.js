@@ -18,7 +18,6 @@ import objToQueryString from '../common/ObjToQueryString';
 import Config from '../common/config.json';
 import {updateUser} from '../../redux/actions/userAction';
 import {updateToken} from '../../redux/actions/authAction';
-import {initialWindowMetrics} from 'react-native-safe-area-context';
 
 class Login extends React.Component {
   static navigationOptions = {
@@ -72,26 +71,27 @@ class Login extends React.Component {
     fetch('http://xuedong.online:8088/auth/pswlogin?' + queryString, {
       method: 'GET',
     })
-      .then((res) => {
-        if (res.status !== 200) {
-          this._handleLoginFail();
-          this.props.updateToken('');
-        }
-      })
       // .then((res) => res.text())
       .then((token) => {
-        console.log('fetch token');
-        console.log(token);
-        this.props.updateToken(token);
-        this._handleLoginSuccess();
+        if (token.status !== 200) {
+          this._handleLoginFail(token.message);
+          this.props.updateToken('');
+        } else {
+          console.log('fetch token');
+          console.log(token);
+          this.props.updateToken(token);
+          this._handleLoginSuccess();
+        }
       })
       .catch((error) => {
         console.log(error);
-        this._handleLoginFail();
+        this._handleLoginFail('');
       });
   };
-  _handleLoginFail = () => {
-    Alert.alert('登录失败', '请重新输入', [{text: '好', onPress: () => {}}]);
+  _handleLoginFail = (msg) => {
+    Alert.alert('登录失败', '请重新输入\r' + msg, [
+      {text: '好', onPress: () => {}},
+    ]);
   };
   _handleLoginSuccess = () => {
     ToastAndroid.show('登录成功', ToastAndroid.SHORT);

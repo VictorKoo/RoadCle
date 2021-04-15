@@ -2,13 +2,15 @@ import React from 'react';
 import {StyleSheet, View, Text} from 'react-native';
 import {SwipeablePanel} from './SwipablePanel';
 import GS from '../common/GlobalStyles';
+import {connect} from 'react-redux';
+import {endTrack, startTrack} from '../../redux/actions/trackAction';
 
-export default class extends React.Component {
+class BottomPanel extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       content: () => null,
-      isActive: props.isActive,
+      isActive: this.props.isTracking,
       openLarge: false,
       onlyLarge: false,
       fullWidth: true,
@@ -36,7 +38,11 @@ export default class extends React.Component {
         allowTouchOutside={this.state.allowTouchOutside}
         // closeOnTouchOutside={true}
         fullWidth={this.state.fullWidth}
-        onClose={() => this.setState({isActive: false})}>
+        isActive={this.props.isTracking}
+        onClose={() => {
+          this.props.endTrack();
+          console.log(this.props.isTracking);
+        }}>
         <View style={styles.container}>
           <Text style={styles.sign}>下滑停止记录</Text>
           <View style={styles.bottomPanelCol}>
@@ -59,7 +65,7 @@ export default class extends React.Component {
   }
 }
 let _style = {
-  // height: GS.sHeight,
+  height: GS.sHeight - 230,
 };
 const styles = StyleSheet.create({
   container: {
@@ -89,6 +95,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     textAlign: 'right',
     fontSize: 100,
+    fontFamily: 'GOST',
   },
   unitText: {
     flex: 0.2,
@@ -115,3 +122,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 });
+
+const mapStateToProps = (state) => ({
+  user: state.userReducer.user,
+  isTracking: state.trackReducer.isTracking,
+  record_id: state.trackReducer.record_id,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  endTrack: () => dispatch(endTrack()),
+  startTrack: () => dispatch(startTrack()),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(BottomPanel);

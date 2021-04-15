@@ -3,3 +3,11 @@ export const addPoint = (point, id) => ({
   point: point,
   record_id: id,
 });
+
+export const startTrack = () => ({
+  type: 'START_TRACK',
+});
+
+export const endTrack = () => ({
+  type: 'END_TRACK',
+});
