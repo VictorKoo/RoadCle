@@ -5,8 +5,13 @@ const initialState = {
   //   track: [{latitude: 0, longitude: 0, height: 0, loc_time: 0}],
   trackPoint: [
     {
-      latitude: 0.0,
-      longitude: 0.0,
+      latitude: 22.366718,
+      longitude: 113.554467,
+      // altitude: 0.0,
+    },
+    {
+      latitude: 22.367035,
+      longitude: 113.553726,
       // altitude: 0.0,
     },
   ],

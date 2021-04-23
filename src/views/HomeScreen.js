@@ -3,44 +3,34 @@
  */
 
 import React from 'react';
-
+import geolocation from '@react-native-community/geolocation';
 import {
   SafeAreaView,
   StyleSheet,
-  ScrollView,
   View,
   Text,
   StatusBar,
-  Animated,
-  Touchable,
-  TouchableWithoutFeedback,
-  Pressable,
   Alert,
   TouchableOpacity,
-  TouchableHighlight,
-  onPress,
-  // Button,
+  AppState,
 } from 'react-native';
 import {connect} from 'react-redux';
 import {
   BaiduMapManager,
   MapView,
   MapTypes,
-  Geolocation,
   Overlay,
-  MapApp,
-  Polyline,
 } from 'react-native-baidu-map';
-// import {SwipeablePanel} from 'rn-swipeable-panel';
+import gcoord from 'gcoord';
 import GS from '../common/GlobalStyles';
-import Content from '../components/Content';
-import {SwipeablePanel} from '../components/SwipablePanel';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
+
+navigator.geolocation = geolocation;
 
 class HomeScreen extends React.Component {
   /** React Navigation 配置 */
@@ -51,15 +41,29 @@ class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      locatorId: '',
       center: {},
       location: {},
       markers: [],
+      tracks: [
+        // {
+        //   latitude: 22.366718,
+        //   longitude: 113.554467,
+        //   altitude: 0.0,
+        // },
+        // {
+        //   latitude: 22.367035,
+        //   longitude: 113.553726,
+        //   altitude: 0.0,
+        // },
+      ],
       // isBottomPanelActive: false,
       /**面板信息 */
       contentData: {
         speed: 0,
       },
       noBackgroundOpacity: true,
+      zoom: 20,
     };
   }
   /**Log something */
@@ -73,38 +77,98 @@ class HomeScreen extends React.Component {
   }
   /**Press Me button */
   _handlePressMe() {
-    console.log('Pressed');
+    console.log('Pressed Me');
     this.props.navigation.push('AboutMe');
   }
   /**Press Start button */
   _handlePressStart() {
     this.props.startTrack();
     this._log(this.props.isTracking);
+    this._startTracking();
   }
   /**Locate now */
   _locateOnce = () => {
     console.log('Locate');
-    Geolocation.getCurrentPosition()
-      .then((data) => {
-        this.setState({
-          // zoom: 18,
-          markers: [
-            {
-              latitude: data.latitude,
-              longitude: data.longitude,
-              title: '我的位置',
-            },
-          ],
-          center: data,
-          location: data,
-        });
-      })
-      .catch((error) => {
-        console.warn(error, 'error');
-      });
+    navigator.geolocation.getCurrentPosition(
+      (success) => {
+        /**百度坐标系 */
+        let bdCoord = gcoord.transform(
+          [success.coords.longitude, success.coords.latitude], // 经度, 纬度
+          gcoord.WGS84, // 当前坐标系
+          gcoord.BD09, // 目标坐标系
+        );
+        success.coords.longitude = bdCoord[0];
+        success.coords.latitude = bdCoord[1];
+        if (
+          success.coords.latitude === Number.MIN_VALUE &&
+          success.coords.longitude === Number.MIN_VALUE
+        ) {
+          Alert.alert('定位出错', '请重试\n', [
+            {text: '确认', onPress: () => {}},
+          ]);
+        } else {
+          console.log('lat: ' + success.coords.latitude);
+          console.log('lot: ' + success.coords.longitude);
+          this.setState({
+            tracks: [
+              ...this.state.tracks,
+              {
+                latitude: success.coords.latitude,
+                longitude: success.coords.longitude,
+              },
+            ],
+            center: success.coords,
+            location: success.coords,
+          });
+        }
+      },
+      (err) => console.log(err),
+    );
+  };
+  _startTracking = () => {
+    console.log('tracking');
+    this.state.locatorId = navigator.geolocation.watchPosition(
+      (success) => {
+        /**百度坐标系 */
+        let bdCoord = gcoord.transform(
+          [success.coords.longitude, success.coords.latitude], // 经度, 纬度
+          gcoord.WGS84, // 当前坐标系
+          gcoord.BD09, // 目标坐标系
+        );
+        success.coords.longitude = bdCoord[0];
+        success.coords.latitude = bdCoord[1];
+        if (
+          success.coords.latitude === Number.MIN_VALUE &&
+          success.coords.longitude === Number.MIN_VALUE
+        ) {
+          Alert.alert('定位出错', '请重试\n', [
+            {text: '确认', onPress: () => {}},
+          ]);
+        } else {
+          console.log('lat: ' + success.coords.latitude);
+          console.log('lot: ' + success.coords.longitude);
+          this.setState({
+            tracks: [
+              ...this.state.tracks,
+              {
+                latitude: success.coords.latitude,
+                longitude: success.coords.longitude,
+              },
+            ],
+            center: success.coords,
+            location: success.coords,
+          });
+        }
+      },
+      (err) => console.log(err),
+    );
+  };
+  _stopTracking = () => {
+    console.log('Stopping tracking');
+    navigator.geolocation.clearWatch(this.state.locatorId);
   };
   render() {
-    this._log('Rending');
+    this._log('Rending Home');
     return (
       <>
         <StatusBar
@@ -117,7 +181,7 @@ class HomeScreen extends React.Component {
             <MapView
               width={GS.sWidth}
               height={GS.sHeight}
-              zoom={25}
+              zoom={this.state.zoom}
               zoomControlsVisible={true}
               mapType={MapTypes.NORMAL}
               zoomGesturesEnabled={true}
@@ -126,7 +190,27 @@ class HomeScreen extends React.Component {
               markers={this.state.markers}
               locationData={this.state.location}
               showsUserLocation={true}>
-              {/* <Polyline points={this.props.trackPoint} /> */}
+              {this.props.isTracking ? (
+                <Overlay.Polyline
+                  points={
+                    this.state.tracks.length > 1
+                      ? this.state.tracks
+                      : [
+                          {
+                            latitude: 22.366304,
+                            longitude: 113.553335,
+                            // altitude: 0.0,
+                          },
+                          {
+                            latitude: 22.366994,
+                            longitude: 113.554323,
+                            // altitude: 0.0,
+                          },
+                        ]
+                  }
+                  stroke={{width: 10, color: Config.yellowD}}
+                />
+              ) : null}
             </MapView>
           </View>
           <BottomPanel
@@ -134,12 +218,18 @@ class HomeScreen extends React.Component {
             isActive={this.props.isTracking}
             onClose={() => {
               this.props.endTrack();
+              this._stopTracking.bind(this);
             }}
           />
           <TouchableOpacity
             onPress={this._handlePressMe.bind(this)}
             style={[styles.infoButton]}>
             <Text>我</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={this._locateOnce.bind(this)}
+            style={[styles.locateButton]}>
+            <Text>定位</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.startButton}
@@ -168,6 +258,17 @@ const styles = StyleSheet.create({
   /**个人信息按钮 */
   infoButton: {
     top: GS.sHeight * 0.08,
+    left: GS.sWidth * 0.08,
+    position: 'absolute',
+    width: GS.sWidth * 0.15,
+    height: GS.sHeight * 0.05,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: GS.global.color,
+    borderRadius: 20,
+  },
+  locateButton: {
+    top: GS.sHeight * 0.14,
     left: GS.sWidth * 0.08,
     position: 'absolute',
     width: GS.sWidth * 0.15,

@@ -39,24 +39,21 @@ class BottomPanel extends React.Component {
         // closeOnTouchOutside={true}
         fullWidth={this.state.fullWidth}
         isActive={this.props.isTracking}
-        onClose={() => {
-          this.props.endTrack();
-          console.log(this.props.isTracking);
-        }}>
+        onClose={this.props.onClose}>
         <View style={styles.container}>
           <Text style={styles.sign}>下滑停止记录</Text>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText}>{this.props.data.speed}</Text>
+            <Text style={styles.contentText}>0.0</Text>
             <Text style={styles.unitText}>速度 kmph</Text>
-            <Text style={styles.contentText}>{this.props.data.speed}</Text>
+            <Text style={styles.contentText}>0.0</Text>
             <Text style={styles.unitText}>里程 km</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>{this.props.data.speed}</Text>
+            <Text style={styles.contentText2}>0.0</Text>
             <Text style={styles.unitText2}>平均速度 kmph</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>{this.props.data.speed}</Text>
+            <Text style={styles.contentText2}>00:01</Text>
             <Text style={styles.unitText2}>时间</Text>
           </View>
         </View>
@@ -112,10 +109,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     textAlign: 'center',
     fontSize: 100,
-    marginLeft: 50,
+    marginLeft: 0,
   },
   unitText2: {
-    flex: 0.5,
+    flex: 0.2,
     flexDirection: 'column',
     alignContent: 'center',
     justifyContent: 'center',

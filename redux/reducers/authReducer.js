@@ -6,10 +6,12 @@ const userReducer = (state = initialState, action) => {
     case 'UPDATE_TOKEN': {
       if (action.token !== null) {
         return {
+          ...state,
           token: action.token,
         };
       } else {
         return {
+          ...state,
           token: '',
         };
       }

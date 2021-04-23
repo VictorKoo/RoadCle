@@ -78,7 +78,7 @@ class AboutMe extends Component {
             title: '用户',
             data: [
               {
-                title: '未登录',
+                title: this.props.user.name,
                 mathod: LOGIN,
               },
             ],
