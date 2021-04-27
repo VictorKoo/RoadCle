@@ -66,15 +66,6 @@ class HomeScreen extends React.Component {
       zoom: 20,
     };
   }
-  /**Log something */
-  _log(str) {
-    if (str != null) {
-      console.log(str);
-    } else {
-      console.log('Something wrong');
-      throw new Error('Trying to log a Null Pointer');
-    }
-  }
   /**Press Me button */
   _handlePressMe() {
     console.log('Pressed Me');
@@ -83,7 +74,7 @@ class HomeScreen extends React.Component {
   /**Press Start button */
   _handlePressStart() {
     this.props.startTrack();
-    this._log(this.props.isTracking);
+    console.log(this.props.isTracking);
     this._startTracking();
   }
   /**Locate now */
@@ -110,13 +101,6 @@ class HomeScreen extends React.Component {
           console.log('lat: ' + success.coords.latitude);
           console.log('lot: ' + success.coords.longitude);
           this.setState({
-            tracks: [
-              ...this.state.tracks,
-              {
-                latitude: success.coords.latitude,
-                longitude: success.coords.longitude,
-              },
-            ],
             center: success.coords,
             location: success.coords,
           });
@@ -168,7 +152,7 @@ class HomeScreen extends React.Component {
     navigator.geolocation.clearWatch(this.state.locatorId);
   };
   render() {
-    this._log('Rending Home');
+    console.log('Rending Home');
     return (
       <>
         <StatusBar
@@ -241,8 +225,8 @@ class HomeScreen extends React.Component {
     );
   }
   componentDidMount() {
-    this._log('Started');
-    this._locateOnce();
+    console.log('Started');
+    this._startTracking.bind(this);
   }
 }
 
