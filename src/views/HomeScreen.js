@@ -1,5 +1,6 @@
 /**
- *
+ * @file 骑行地图
+ * @author Victor Koo
  */
 
 import React from 'react';
@@ -12,7 +13,7 @@ import {
   StatusBar,
   Alert,
   TouchableOpacity,
-  AppState,
+  PermissionsAndroid,
 } from 'react-native';
 import {connect} from 'react-redux';
 import {
@@ -26,6 +27,7 @@ import GS from '../common/GlobalStyles';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
+import {uploadPoint} from '../services/trackUtil';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
@@ -41,32 +43,61 @@ class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      /**定位监听器ID */
       locatorId: '',
-      center: {},
-      location: {},
+      /**地图中心点 */
+      center: {
+        latitude: 22.366718,
+        longitude: 113.554467,
+      },
+      /**位置 */
+      location: {
+        /**速度 */
+        speed: 0,
+        /**经度 */
+        longitude: 0,
+        /**纬度 */
+        latitude: 0,
+        /**精度 */
+        accuracy: 0,
+        /**指向 */
+        heading: 0,
+        /**海拔高度 */
+        altitude: 0,
+        /**海拔精度 */
+        altitudeAccuracy: 0,
+        /**时间戳 */
+        timestamp: 0,
+      },
+      /**记录的开始时间 */
+      startTime: 0,
+      /**记录的结束时间 */
+      endTime: 0,
+      /**记录UUID */
+      recordId: '',
+      /**地图标记 */
       markers: [],
-      tracks: [
-        // {
-        //   latitude: 22.366718,
-        //   longitude: 113.554467,
-        //   altitude: 0.0,
-        // },
-        // {
-        //   latitude: 22.367035,
-        //   longitude: 113.553726,
-        //   altitude: 0.0,
-        // },
-      ],
+      /**轨迹 */
+      tracks: [],
       // isBottomPanelActive: false,
       /**面板信息 */
       contentData: {
+        /**速度 */
         speed: 0,
+        /**里程 */
+        mileage: 0,
+        /**时间 */
+        duration: 0,
+        /**爬升 */
+        climb: 0,
+        /**平均速度 */
+        averageSpeed: 0,
       },
-      noBackgroundOpacity: true,
+      /**地图放大级别 */
       zoom: 20,
     };
   }
-  /**Press Me button */
+  /**Press "Me" button */
   _handlePressMe() {
     console.log('Pressed Me');
     this.props.navigation.push('AboutMe');
@@ -75,9 +106,9 @@ class HomeScreen extends React.Component {
   _handlePressStart() {
     this.props.startTrack();
     console.log(this.props.isTracking);
-    this._startTracking();
+    this._startTrack();
   }
-  /**Locate now */
+  /**Locate once */
   _locateOnce = () => {
     console.log('Locate');
     navigator.geolocation.getCurrentPosition(
@@ -101,55 +132,103 @@ class HomeScreen extends React.Component {
           console.log('lat: ' + success.coords.latitude);
           console.log('lot: ' + success.coords.longitude);
           this.setState({
-            center: success.coords,
-            location: success.coords,
+            center: {
+              latitude: success.coords.latitude,
+              longitude: success.coords.longitude,
+            },
+            location: {...success.coords, timestamp: success.timestamp},
           });
         }
       },
       (err) => console.log(err),
     );
   };
-  _startTracking = () => {
-    console.log('tracking');
-    this.state.locatorId = navigator.geolocation.watchPosition(
-      (success) => {
-        /**百度坐标系 */
-        let bdCoord = gcoord.transform(
-          [success.coords.longitude, success.coords.latitude], // 经度, 纬度
-          gcoord.WGS84, // 当前坐标系
-          gcoord.BD09, // 目标坐标系
-        );
-        success.coords.longitude = bdCoord[0];
-        success.coords.latitude = bdCoord[1];
-        if (
-          success.coords.latitude === Number.MIN_VALUE &&
-          success.coords.longitude === Number.MIN_VALUE
-        ) {
-          Alert.alert('定位出错', '请重试\n', [
+  /**
+   * 在线创建记录，获取记录ID并保存在组件state
+   * @param {number=} _start_time 开始时间
+   * @return {string} record ID
+   */
+  _createRecord = (_start_time = this.state.startTime) => {
+    fetch('http://xuedong.online:8088/r/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+        Authorization: this.props.token ? this.props.token : '',
+      },
+      body: JSON.stringify({
+        user_uuid: this.props.user.user_uuid,
+        start_time: _start_time,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          Alert.alert('创建记录失败', '请检查网络\n', [
             {text: '确认', onPress: () => {}},
           ]);
         } else {
-          console.log('lat: ' + success.coords.latitude);
-          console.log('lot: ' + success.coords.longitude);
-          this.setState({
-            tracks: [
-              ...this.state.tracks,
-              {
-                latitude: success.coords.latitude,
-                longitude: success.coords.longitude,
-              },
-            ],
-            center: success.coords,
-            location: success.coords,
-          });
+          res.json();
         }
-      },
-      (err) => console.log(err),
-    );
+      })
+      .then((res) => {
+        // this.state.record_id = res.record_id;
+        return res.record_id;
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
+  /**
+   * 结束记录标记
+   * @param {number=} recordId
+   * @param {number} endTime
+   */
+  _endRecord = (recordId = this.state.recordId, endTime) => {
+    fetch('http://xuedong.online:8088/r/' + recordId, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+        Authorization: this.props.token ? this.props.token : '',
+      },
+      body: JSON.stringify({
+        end_time: endTime,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          Alert.alert('终点上传失败', '请检查网络\n', [
+            {text: '确认', onPress: () => {}},
+          ]);
+        } else {
+          res.json();
+        }
+      })
+      .then((res) => {})
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+  /**本地持久保存轨迹 */
+  _startTrack = () => {
+    console.log('Tracking');
+    if (this.state.location.accuracy > 50) {
+      Alert.alert('注意', '当前卫星信号弱，请前往开阔地带', [
+        {
+          text: '确认',
+          onPress: () => {
+            this._stopTracking.bind(this);
+          },
+        },
+      ]);
+    }
+    this.state.recordId = this._createRecord(
+      this.state.location.timestamp,
+    ).bind(this);
+  };
+  /**停止记录 */
   _stopTracking = () => {
     console.log('Stopping tracking');
-    navigator.geolocation.clearWatch(this.state.locatorId);
+    this.props.endTrack();
+    this._endRecord(this.state.recordId, this.state.location.timestamp);
   };
   render() {
     console.log('Rending Home');
@@ -195,6 +274,12 @@ class HomeScreen extends React.Component {
                   stroke={{width: 10, color: Config.yellowD}}
                 />
               ) : null}
+              <Overlay.Circle
+                radius={this.state.location.accuracy}
+                fillColor="22ffd60a"
+                stroke={{width: 2, color: 'aaffd60a'}}
+                center={this.state.location}
+              />
             </MapView>
           </View>
           <BottomPanel
@@ -224,9 +309,81 @@ class HomeScreen extends React.Component {
       </>
     );
   }
-  componentDidMount() {
+  /**
+   * 加载完毕后开始监听位置
+   */
+  async componentDidMount() {
     console.log('Started');
-    this._startTracking.bind(this);
+    this._locateOnce.bind(this);
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: '权限请求',
+          message: '应用需要获取定位权限',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('');
+      } else {
+        Alert.alert('注意', '应用需要定位权限', [
+          {
+            text: '确认',
+            onPress: () => {
+              this._stopTracking.bind(this);
+            },
+          },
+        ]);
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+    this.state.locatorId = navigator.geolocation.watchPosition(
+      (location) => {
+        /**百度坐标系 */
+        let bdCoord = gcoord.transform(
+          [location.coords.longitude, location.coords.latitude], // 经度, 纬度
+          gcoord.WGS84, // 当前坐标系
+          gcoord.BD09, // 目标坐标系
+        );
+        location.coords.longitude = bdCoord[0];
+        location.coords.latitude = bdCoord[1];
+        this.setState({
+          location: {...location.coords, timestamp: location.timestamp},
+        });
+        if (this.props.isTracking) {
+          this.setState({
+            tracks: [...this.state.tracks, this.state.location],
+          });
+          uploadPoint(
+            this.props.user.user_uuid,
+            Number(this.state.location.timestamp) / 1000,
+            this.state.location.longitude,
+            this.state.location.latitude,
+            this.state.location.speed,
+            this.state.location.heading,
+            this.state.location.altitude,
+            this.state.location.accuracy,
+          );
+        }
+        console.log('time: ' + this.state.location.timestamp);
+        console.log('acc: ' + this.state.location.accuracy);
+      },
+      (error) => {
+        Alert.alert('获取位置失败：' + error);
+      },
+      /**Navigator configuration */
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+        distanceFilter: 0,
+      },
+    );
+  }
+  componentWillUnmount() {
+    navigator.geolocation.clearWatch(this.state.locatorId);
   }
 }
 
