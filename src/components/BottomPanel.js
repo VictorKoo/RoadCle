@@ -24,7 +24,20 @@ class BottomPanel extends React.Component {
       barStyle: {},
       panelStyles: {},
       contentData: {
-        speed: 0,
+        /**速度 */
+        speed: this.props.data.speed ? this.props.data.speed : 0,
+        /**里程 */
+        mileage: this.props.data.mileage ? this.props.data.mileage : 0,
+        /**时间 */
+        duration: this.props.data.duration
+          ? this.props.data.duration
+          : '00: 01',
+        /**爬升 */
+        climb: this.props.data.climb ? this.props.data.climb : 0,
+        /**平均速度 */
+        averageSpeed: this.props.data.averageSpeed
+          ? this.props.data.averageSpeed
+          : 0,
       },
     };
   }
@@ -43,17 +56,25 @@ class BottomPanel extends React.Component {
         <View style={styles.container}>
           <Text style={styles.sign}>下滑停止记录</Text>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText}>0.0</Text>
+            <Text style={styles.contentText}>
+              {this.state.contentData.speed}
+            </Text>
             <Text style={styles.unitText}>速度 kmph</Text>
-            <Text style={styles.contentText}>0.0</Text>
+            <Text style={styles.contentText}>
+              {this.state.contentData.mileage}
+            </Text>
             <Text style={styles.unitText}>里程 km</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>0.0</Text>
+            <Text style={styles.contentText2}>
+              {this.state.contentData.averageSpeed}
+            </Text>
             <Text style={styles.unitText2}>平均速度 kmph</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>00:01</Text>
+            <Text style={styles.contentText2}>
+              {this.state.contentData.duration}
+            </Text>
             <Text style={styles.unitText2}>时间</Text>
           </View>
         </View>

@@ -1,3 +1,8 @@
+/**
+ *
+ * @param {Object} obj
+ * @returns {String} Query string
+ */
 const objToQueryString = (obj) => {
   const keyValuePairs = [];
   for (const key in obj) {

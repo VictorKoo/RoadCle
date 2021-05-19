@@ -7,7 +7,6 @@ import {
   View,
   Text,
   Animated,
-  TouchableWithoutFeedback,
   PanResponder,
   StyleSheet,
   Dimensions,

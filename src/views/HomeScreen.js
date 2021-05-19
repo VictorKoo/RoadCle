@@ -87,7 +87,7 @@ class HomeScreen extends React.Component {
         /**里程 */
         mileage: 0,
         /**时间 */
-        duration: 0,
+        duration: '00:00',
         /**爬升 */
         climb: 0,
         /**平均速度 */
@@ -145,10 +145,10 @@ class HomeScreen extends React.Component {
   };
   /**
    * 在线创建记录，获取记录ID并保存在组件state
-   * @param {number=} _start_time 开始时间
-   * @return {string} record ID
+   * @param {Number=} start_time 开始时间
+   * @return {String} record ID
    */
-  _createRecord = (_start_time = this.state.startTime) => {
+  _createRecord = (start_time = this.state.startTime) => {
     fetch('http://xuedong.online:8088/r/', {
       method: 'POST',
       headers: {
@@ -156,22 +156,22 @@ class HomeScreen extends React.Component {
         Authorization: this.props.token ? this.props.token : '',
       },
       body: JSON.stringify({
-        user_uuid: this.props.user.user_uuid,
-        start_time: _start_time,
+        user_uuid: this.props.user.user_uuid
+          ? this.props.user.user_uuid
+          : '6c3ee671-a8db-41c0-9806-693a4c5c9257',
+        start_time: start_time,
       }),
     })
       .then((res) => {
-        if (!res.ok) {
-          Alert.alert('创建记录失败', '请检查网络\n', [
+        if (res.status !== 200) {
+          Alert.alert('创建记录失败', '请检查网络\n' + res.status, [
             {text: '确认', onPress: () => {}},
           ]);
         } else {
-          res.json();
+          res.json().then((json) => {
+            return json.record_id;
+          });
         }
-      })
-      .then((res) => {
-        // this.state.record_id = res.record_id;
-        return res.record_id;
       })
       .catch((error) => {
         console.log(error);
@@ -179,10 +179,13 @@ class HomeScreen extends React.Component {
   };
   /**
    * 结束记录标记
-   * @param {number=} recordId
-   * @param {number} endTime
+   * @param {Number=} recordId
+   * @param {Number=} endTime
    */
-  _endRecord = (recordId = this.state.recordId, endTime) => {
+  _endRecord = (
+    recordId = this.state.recordId,
+    endTime = this.state.endTime,
+  ) => {
     fetch('http://xuedong.online:8088/r/' + recordId, {
       method: 'PUT',
       headers: {
@@ -193,16 +196,11 @@ class HomeScreen extends React.Component {
         end_time: endTime,
       }),
     })
-      .then((res) => {
-        if (!res.ok) {
-          Alert.alert('终点上传失败', '请检查网络\n', [
-            {text: '确认', onPress: () => {}},
-          ]);
-        } else {
-          res.json();
-        }
-      })
-      .then((res) => {})
+      .then((res) =>
+        res.json().then((json) => {
+          return json.record_id;
+        }),
+      )
       .catch((error) => {
         console.log(error);
       });
@@ -220,9 +218,7 @@ class HomeScreen extends React.Component {
         },
       ]);
     }
-    this.state.recordId = this._createRecord(
-      this.state.location.timestamp,
-    ).bind(this);
+    this.state.recordId = this._createRecord(this.state.location.timestamp);
   };
   /**停止记录 */
   _stopTracking = () => {
@@ -352,6 +348,7 @@ class HomeScreen extends React.Component {
         this.setState({
           location: {...location.coords, timestamp: location.timestamp},
         });
+        /**若开始记录轨迹 */
         if (this.props.isTracking) {
           this.setState({
             tracks: [...this.state.tracks, this.state.location],
@@ -367,8 +364,9 @@ class HomeScreen extends React.Component {
             this.state.location.accuracy,
           );
         }
-        console.log('time: ' + this.state.location.timestamp);
-        console.log('acc: ' + this.state.location.accuracy);
+        // console.log('time: ' + this.state.location.timestamp);
+        // console.log('acc: ' + this.state.location.accuracy);
+        // console.log('speed: ' + this.state.location.speed);
       },
       (error) => {
         Alert.alert('获取位置失败：' + error);
