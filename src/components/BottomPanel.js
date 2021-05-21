@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     textAlign: 'right',
     fontSize: 70,
-    fontFamily: 'GOST',
+    fontFamily: 'Gost',
     color: '#ff8c00',
   },
   unitText: {

@@ -27,12 +27,7 @@ import GS from '../common/GlobalStyles';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
-import {
-  uploadPoint,
-  calcDistantBySpeed,
-  calcData,
-  endRecord,
-} from '../services/trackUtil';
+import {uploadPoint, calcDistantBySpeed, calcData} from '../services/trackUtil';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
@@ -118,7 +113,7 @@ class HomeScreen extends React.Component {
       this.state.location.speed,
       this.state.contentData.mileage,
       this.state.location.altitude,
-      Date.parse(new Date()),
+      Date.parse(new Date()) / 1000,
       true,
     );
     this._startTrack();
@@ -158,21 +153,25 @@ class HomeScreen extends React.Component {
       (err) => console.log(err),
     );
   };
+
   /**
    * 在线创建记录，获取记录ID并保存在组件state
-   * @param {Number=} start_time 开始时间 (s)
+   * @param {Number} start_time 开始时间 (s)
+   * @param {String} user_uuid
+   * @param {String} token
    * @return {String} record ID
    */
-  _createRecord = (start_time = this.state.startTime) => {
+  _createRecord = (start_time, user_uuid, token) => {
+    let rid = '';
     fetch('http://xuedong.online:8088/r/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=utf-8',
-        Authorization: this.props.token ? this.props.token : '',
+        Authorization: token ? token : '',
       },
       body: JSON.stringify({
-        user_uuid: this.props.user.user_uuid
-          ? this.props.user.user_uuid
+        user_uuid: user_uuid
+          ? user_uuid
           : '6c3ee671-a8db-41c0-9806-693a4c5c9257',
         start_time: start_time,
       }),
@@ -184,16 +183,58 @@ class HomeScreen extends React.Component {
           ]);
         } else {
           res.json().then((json) => {
-            return json.record_id;
+            this.state.recordId = json.record_id;
+            rid = json.record_id;
+            console.log('RID=' + this.state.recordId);
           });
         }
       })
       .catch((error) => {
         console.log(error);
       });
+    // return rid;
   };
+  /**
+   * 结束记录标记
+   * @param {Number} recordId
+   * @param {Number} endTime (s)
+   * @param {String} token
+   */
+  _endRecord = (recordId, endTime, token) => {
+    console.log('End record ' + recordId);
+    fetch(
+      'http://xuedong.online:8088/r/' +
+        (recordId ? recordId : '11d05b6a-5cb4-4e9c-aeba-18dd89f1149b'),
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          Authorization: token ? token : '',
+        },
+        body: JSON.stringify({
+          end_time: endTime,
+        }),
+      },
+    )
+      .then((res) => {
+        if (res.status !== 200) {
+          Alert.alert('创建记录失败', '请检查网络\n' + res.status, [
+            {text: '确认', onPress: () => {}},
+          ]);
+          console.log(res);
+        } else {
+          res.json().then((json) => {
+            return json.record_id;
+          });
+        }
+      })
+      .catch((error) => {
+        console.log('ER: ' + error);
+      });
+  };
+
   /**本地持久保存轨迹并计算数据 */
-  _startTrack = () => {
+  _startTrack = async () => {
     console.log('Tracking');
     if (this.state.location.accuracy > 50) {
       Alert.alert('注意', '当前卫星信号弱，请前往开阔地带', [
@@ -207,7 +248,9 @@ class HomeScreen extends React.Component {
     }
     // 创建记录
     this.state.recordId = this._createRecord(
-      this.state.location.timestamp / 1000,
+      Date.parse(new Date()) / 1000,
+      this.props.user.user_uuid,
+      this.props.token ? this.props.token : '',
     );
     this.state.intervalId = setInterval(async () => {
       console.log('Interval calc data: ' + this.state.intervalId);
@@ -216,20 +259,31 @@ class HomeScreen extends React.Component {
         this.state.location.speed,
         this.state.contentData.mileage,
         this.state.location.altitude,
-        Date.parse(new Date()),
+        Date.parse(new Date()) / 1000,
         false,
       );
       this.setState({contentData: contentData});
+      /**上传轨迹点 */
+      uploadPoint(
+        this.props.user.user_uuid ? this.props.user.user_uuid : 'test08',
+        Date.parse(new Date()) / 1000,
+        this.state.location.longitude,
+        this.state.location.latitude,
+        this.state.location.speed,
+        this.state.location.heading,
+        this.state.location.altitude,
+        this.state.location.accuracy,
+      );
     }, 1000);
   };
   /**停止记录 */
-  _stopTracking = () => {
+  _stopTracking = async () => {
     console.log('Stopping tracking');
     clearInterval(this.state.intervalId);
     this.props.endTrack();
-    endRecord(
+    this._endRecord(
       this.state.recordId,
-      this.state.location.timestamp / 1000,
+      Date.parse(new Date()) / 1000,
       this.props.token ? this.props.token : '',
     );
   };
@@ -361,16 +415,6 @@ class HomeScreen extends React.Component {
           this.setState({
             tracks: [...this.state.tracks, this.state.location],
           });
-          uploadPoint(
-            this.props.user.user_uuid ? this.props.user.user_uuid : 'test08',
-            Number(this.state.location.timestamp) / 1000,
-            this.state.location.longitude,
-            this.state.location.latitude,
-            this.state.location.speed,
-            this.state.location.heading,
-            this.state.location.altitude,
-            this.state.location.accuracy,
-          );
         }
         // console.log('time: ' + this.state.location.timestamp);
         // console.log('acc: ' + this.state.location.accuracy);

@@ -176,7 +176,7 @@ class Login extends React.Component {
                 <Text>登录</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={this.props.navigation.navigate('Logup')}
+                onPress={this._handlePressLogin.bind(this)}
                 style={[styles.logupButton]}>
                 <Text>注册</Text>
               </TouchableOpacity>

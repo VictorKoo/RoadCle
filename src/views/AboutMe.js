@@ -19,6 +19,10 @@ class Item extends Component {
     switch (this.props.mathod) {
       case LOGIN:
         this.props.navigation.push('Login');
+        break;
+      case LOGOUT:
+        this.props.navigation.push('Login');
+        break;
       default:
     }
   }

@@ -158,37 +158,6 @@ export let getDistance = (name, start_time, end_time) => {
     });
 };
 
-/**
- * 结束记录标记
- * @param {Number} recordId
- * @param {Number} endTime (s)
- * @param {String} token
- */
-export let endRecord = (recordId, endTime, token) => {
-  fetch('http://xuedong.online:8088/r/' + recordId ? recordId : '', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json;charset=utf-8',
-      Authorization: token ? token : '',
-    },
-    body: JSON.stringify({
-      end_time: endTime,
-    }),
-  })
-    .then((res) => {
-      if (res.status !== 200) {
-        console.error(res);
-      } else {
-        res.json().then((json) => {
-          return json.record_id;
-        });
-      }
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-};
-
 /**开始时间戳 */
 let startTime = 0;
 
@@ -224,7 +193,7 @@ export let calcData = (
     averageSpeed: 0,
   };
   let startAltitude = 0;
-  let timeDur = Math.abs(timestamp / 1000 - startTime);
+  let timeDur = Math.abs(timestamp - startTime);
   // let timeDur = z + interval / 1000;
   // z = timeDur;
   let s = 0;
@@ -233,15 +202,15 @@ export let calcData = (
   m = parseInt(timeDur / 60, 10);
   if (isStart) {
     timeDur = 0;
-    startTime = timestamp / 1000;
+    startTime = timestamp;
     startAltitude = altitude;
     return data;
   }
   data.speed = Math.round(speed * 10) / 10;
   data.mileage =
     Math.round(
-      (calcDistantBySpeed(interval / 1000, speed) / 1000 + mileage) * 10,
-    ) / 10;
+      (calcDistantBySpeed(interval / 1000, speed) / 1000 + mileage) * 100,
+    ) / 100;
   data.duration =
     (m < 10 ? '0' + String(m) : m >= 1000 ? (m = '999') : String(m)) +
     ':' +
