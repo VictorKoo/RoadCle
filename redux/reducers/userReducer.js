@@ -19,13 +19,17 @@ const userReducer = (state = initialState, action) => {
   switch (action.type) {
     case 'UPDATE_USER':
       return {
-        ...state,
+        // ...state,
         user: action.user,
       };
     case 'NEW_USER':
       return {
         ...state,
         user: action.user,
+      };
+    case 'INIT_USER':
+      return {
+        ...state,
       };
     default:
       return state;

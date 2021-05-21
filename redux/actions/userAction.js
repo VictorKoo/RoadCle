@@ -6,3 +6,6 @@ export const updateUser = (user) => ({
   type: 'UPDATE_USER',
   user,
 });
+// export const initUser = () => ({
+//   type: 'INIT_USER',
+// });

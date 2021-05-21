@@ -56,13 +56,17 @@ class BottomPanel extends React.Component {
         <View style={styles.container}>
           <Text style={styles.sign}>下滑停止记录</Text>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText}>{data.speed}</Text>
+            <Text style={styles.contentText}>{data.speed.toFixed(1)}</Text>
             <Text style={styles.unitText}>速度 mps</Text>
-            <Text style={styles.contentText}>{data.mileage}</Text>
+            <Text style={styles.contentText}>
+              {(data.mileage / 1000).toFixed(2)}
+            </Text>
             <Text style={styles.unitText}>里程 km</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>{data.averageSpeed}</Text>
+            <Text style={styles.contentText2}>
+              {(data.averageSpeed / 1000).toFixed(1)}
+            </Text>
             <Text style={styles.unitText2}>平均速度 mps</Text>
           </View>
           <View style={styles.bottomPanelCol}>
@@ -106,7 +110,7 @@ const styles = StyleSheet.create({
     alignContent: 'flex-end',
     justifyContent: 'flex-end',
     textAlign: 'right',
-    fontSize: 70,
+    fontSize: 60,
     fontFamily: 'Gost',
     color: '#ff8c00',
   },

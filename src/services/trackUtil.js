@@ -165,7 +165,7 @@ let startTime = 0;
  * 运动信息计算
  * @param {Number} interval (ms)
  * @param {Number} speed (mps)
- * @param {Number} mileage (km)
+ * @param {Number} mileage (m)
  * @param {Number} altitude (m)
  * @param {Number} timestamp (s)
  * @param {Boolean} isStart Is it start point?
@@ -208,14 +208,13 @@ export let calcData = (
   }
   data.speed = Math.round(speed * 10) / 10;
   data.mileage =
-    Math.round(
-      (calcDistantBySpeed(interval / 1000, speed) / 1000 + mileage) * 100,
-    ) / 100;
+    Math.round((calcDistantBySpeed(interval / 1000, speed) + mileage) * 10) /
+    10;
   data.duration =
     (m < 10 ? '0' + String(m) : m >= 1000 ? (m = '999') : String(m)) +
     ':' +
     (s < 10 ? '0' + String(s) : String(s));
   data.climb = altitude - startAltitude;
-  data.averageSpeed = mileage / timeDur;
+  data.averageSpeed = (mileage * 1000) / timeDur;
   return data;
 };

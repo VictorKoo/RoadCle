@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import {
   SafeAreaView,
@@ -10,6 +11,7 @@ import {
   Keyboard,
   Alert,
   ToastAndroid,
+  Image,
 } from 'react-native';
 import {TextInput} from 'react-native-paper';
 import {connect} from 'react-redux';
@@ -18,6 +20,7 @@ import objToQueryString from '../common/ObjToQueryString';
 import Config from '../common/config.json';
 import {updateUser} from '../../redux/actions/userAction';
 import {updateToken} from '../../redux/actions/authAction';
+import md5 from 'md5';
 
 class Login extends React.Component {
   static navigationOptions = {
@@ -30,11 +33,13 @@ class Login extends React.Component {
       tips: '',
       token: '',
       tipsColor: Config.orangeL,
+      pswVisible: false,
       user: {
         uuid: '',
         name: '',
         password: '',
       },
+      userInfo: {},
     };
     // updateUser(initialState);
   }
@@ -54,8 +59,9 @@ class Login extends React.Component {
         } else {
           res.json(() => {
             console.log('user info ' + res[0].uuid);
-            // this.state.user = res[0];
-            this.props.updateUser(res[0]);
+            this.state.userInfo = res[0];
+            this.state.userInfo.online = 1;
+            this.props.updateUser(this.state.userInfo);
             // console.log('user: ' + res[0]);
           });
         }
@@ -84,7 +90,7 @@ class Login extends React.Component {
   /**Fetch token and save */
   _fetchToken = () => {
     const queryString =
-      'uuid=' + this.props.user.uuid + '&psw=' + this.state.user.password;
+      'uuid=' + this.props.user.uuid + '&psw=' + md5(this.state.user.password);
     console.log(queryString);
     fetch('http://xuedong.online:8088/auth/pswlogin?' + queryString, {
       method: 'GET',
@@ -104,7 +110,7 @@ class Login extends React.Component {
         }
       })
       .catch((error) => {
-        console.log(error);
+        console.warn(error);
         this._handleLoginFail(error);
       });
   };
@@ -115,10 +121,14 @@ class Login extends React.Component {
   };
   _handleLoginSuccess = () => {
     ToastAndroid.show('登录成功', ToastAndroid.SHORT);
-    this.props.navigation.navigate('Home');
+    // Alert.alert('登录', '用户信息\n' + this.props.user.name, [
+    //   {text: '好', onPress: () => {}},
+    // ]);
     this._saveUser();
+    this.props.navigation.navigate('Home');
   };
   _handlePressLogin = () => {
+    ToastAndroid.show('稍侯', ToastAndroid.SHORT);
     this._fetchUserUUIDByName();
     this._fetchToken();
   };
@@ -127,21 +137,25 @@ class Login extends React.Component {
       <>
         <StatusBar backgroundColor={GS.global.backgroundColor + '88'} />
         <View style={[styles.container]}>
-          <View style={styles.leftCol}>
+          <View style={styles.leftRow}>
             <TouchableOpacity
               onPress={() => {
                 this.props.navigation.goBack();
               }}
               style={[styles.buttonBack]}>
-              <Text>Back</Text>
+              <Image
+                style={styles.buttonBackImg}
+                source={require('../images/back.png')}
+              />
             </TouchableOpacity>
           </View>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.rightCol}>
-              {/* <Text style={[styles.tips, {color: this.state.tipsColor}]}> */}
-              {/* {this.state.user.name + this.state.user.password} */}
-              {/* {this.state.tips} */}
-              {/* </Text> */}
+            <View style={styles.rightRow}>
+              <Text style={styles.h1}>登录</Text>
+              <Text style={[styles.tips, {color: this.state.tipsColor}]}>
+                {/* {this.state.user.name + this.state.user.password} */}
+                {this.state.tips}
+              </Text>
               {/*  */}
               {/* <Text> */}
               {/* {this.props.user.uuid} */}
@@ -159,24 +173,44 @@ class Login extends React.Component {
                   this._fetchUserUUIDByName.bind(this);
                 }}
               />
-              <TextInput
-                // placeholder=""
-                mode="outlined"
-                style={styles.pswInput}
-                label="密码"
-                // value={this.state.user.password}
-                secureTextEntry={true}
-                onChangeText={(text) => {
-                  this.state.user.password = text;
-                }}
-              />
+              <View style={styles.pswRow}>
+                <TextInput
+                  // placeholder=""
+                  mode="outlined"
+                  style={styles.pswInput}
+                  label="密码"
+                  // value={this.state.user.password}
+                  secureTextEntry={!this.state.pswVisible}
+                  onChangeText={(text) => {
+                    this.state.user.password = text;
+                  }}
+                />
+                <TouchableWithoutFeedback
+                  onPress={() => {
+                    this.setState({pswVisible: !this.state.pswVisible});
+                  }}>
+                  {this.state.pswVisible ? (
+                    <Image
+                      style={styles.eyeImg}
+                      source={require('../images/eye.png')}
+                    />
+                  ) : (
+                    <Image
+                      style={styles.eyeImg}
+                      source={require('../images/eye-closed.png')}
+                    />
+                  )}
+                </TouchableWithoutFeedback>
+              </View>
               <TouchableOpacity
                 onPress={this._handlePressLogin.bind(this)}
                 style={[styles.loginButton]}>
                 <Text>登录</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={this.props.navigation.navigate('Logup')}
+                onPress={() => {
+                  this.props.navigation.push('Logup');
+                }}
                 style={[styles.logupButton]}>
                 <Text>注册</Text>
               </TouchableOpacity>
@@ -192,21 +226,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: StatusBar.currentHeight,
-    flexDirection: 'row',
+    flexDirection: 'column',
   },
-  leftCol: {
-    flex: 3,
+  leftRow: {
+    flex: 1,
     // backgroundColor: 'orange',
   },
-  rightCol: {
-    flex: 7,
+  rightRow: {
+    flex: 8,
     backgroundColor: Config.orangeL + '11',
     flexDirection: 'column',
     alignItems: 'stretch',
     justifyContent: 'center',
   },
+  h1: {
+    fontSize: 45,
+    // top: GS.sHeight * 0.0,
+    textAlign: 'center',
+    // height: ,
+    lineHeight: 50,
+  },
   buttonBack: {
-    top: GS.sHeight * 0.08,
+    top: GS.sHeight * 0.07,
     left: GS.sWidth * 0.08,
     // position: 'absolute',
     width: GS.sWidth * 0.15,
@@ -216,15 +257,25 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color,
     borderRadius: 20,
   },
+  buttonBackImg: {
+    width: 25,
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   nameInput: {
     height: 60,
     justifyContent: 'center',
     margin: 10,
   },
   pswInput: {
-    height: 60,
+    width: GS.sWidth * 0.83,
     justifyContent: 'center',
     margin: 10,
+  },
+  pswRow: {
+    height: 60,
+    flexDirection: 'row',
   },
   tips: {
     textAlign: 'center',
@@ -233,7 +284,7 @@ const styles = StyleSheet.create({
     // color: this.state.tipsColor,
   },
   loginButton: {
-    top: GS.sHeight * 0.63,
+    top: GS.sHeight * 0.7,
     right: GS.sWidth * 0.05,
     position: 'absolute',
     width: GS.sWidth * 0.3,
@@ -244,15 +295,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   logupButton: {
-    top: GS.sHeight * 0.63,
+    top: GS.sHeight * 0.7,
     right: GS.sWidth * 0.38,
     position: 'absolute',
     width: GS.sWidth * 0.3,
     height: GS.sHeight * 0.05,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GS.global.color + '88',
+    backgroundColor: GS.global.color + '22',
     borderRadius: 20,
+  },
+  eyeImg: {
+    width: 21,
+    height: 14,
+    alignSelf: 'center',
+    marginRight: 10,
   },
 });
 

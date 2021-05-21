@@ -14,6 +14,7 @@ import {
   Alert,
   TouchableOpacity,
   PermissionsAndroid,
+  Image,
 } from 'react-native';
 import {connect} from 'react-redux';
 import {
@@ -27,7 +28,7 @@ import GS from '../common/GlobalStyles';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
-import {uploadPoint, calcDistantBySpeed, calcData} from '../services/trackUtil';
+import {uploadPoint, calcData} from '../services/trackUtil';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
@@ -108,15 +109,43 @@ class HomeScreen extends React.Component {
   _handlePressStart() {
     this.props.startTrack();
     console.log(this.props.isTracking);
-    this.state.contentData = calcData(
-      1000,
-      this.state.location.speed,
-      this.state.contentData.mileage,
-      this.state.location.altitude,
-      Date.parse(new Date()) / 1000,
-      true,
-    );
-    this._startTrack();
+    // console.log(this.state.endTime - Date.parse(new Date()) / 1000);
+    if (this.state.endTime - Date.parse(new Date()) / 1000 < 300) {
+      Alert.alert('提示', '当前离上次活动结束不足5分钟，是否继续上次活动？\n', [
+        {
+          text: '是',
+          onPress: () => {
+            this._startTrack(false);
+          },
+        },
+        {
+          text: '否',
+          onPress: () => {
+            this.state.tracks = [];
+            this.state.contentData = calcData(
+              1000,
+              this.state.location.speed,
+              this.state.contentData.mileage,
+              this.state.location.altitude,
+              Date.parse(new Date()) / 1000,
+              true,
+            );
+            this._startTrack();
+          },
+        },
+      ]);
+    } else {
+      this.state.tracks = [];
+      this.state.contentData = calcData(
+        1000,
+        this.state.location.speed,
+        this.state.contentData.mileage,
+        this.state.location.altitude,
+        Date.parse(new Date()) / 1000,
+        true,
+      );
+      this._startTrack();
+    }
   }
   /**Locate once */
   _locateOnce = () => {
@@ -162,7 +191,6 @@ class HomeScreen extends React.Component {
    * @return {String} record ID
    */
   _createRecord = (start_time, user_uuid, token) => {
-    let rid = '';
     fetch('http://xuedong.online:8088/r/', {
       method: 'POST',
       headers: {
@@ -184,7 +212,6 @@ class HomeScreen extends React.Component {
         } else {
           res.json().then((json) => {
             this.state.recordId = json.record_id;
-            rid = json.record_id;
             console.log('RID=' + this.state.recordId);
           });
         }
@@ -233,8 +260,11 @@ class HomeScreen extends React.Component {
       });
   };
 
-  /**本地持久保存轨迹并计算数据 */
-  _startTrack = async () => {
+  /**
+   * 本地持久保存轨迹并计算数据
+   * @param {bool} 是否为起点
+   */
+  _startTrack = async (isStart = true) => {
     console.log('Tracking');
     if (this.state.location.accuracy > 50) {
       Alert.alert('注意', '当前卫星信号弱，请前往开阔地带', [
@@ -247,11 +277,13 @@ class HomeScreen extends React.Component {
       ]);
     }
     // 创建记录
-    this.state.recordId = this._createRecord(
-      Date.parse(new Date()) / 1000,
-      this.props.user.user_uuid,
-      this.props.token ? this.props.token : '',
-    );
+    if (isStart) {
+      this.state.recordId = this._createRecord(
+        Date.parse(new Date()) / 1000,
+        this.props.user.uuid,
+        this.props.token ? this.props.token : '',
+      );
+    }
     this.state.intervalId = setInterval(async () => {
       console.log('Interval calc data: ' + this.state.intervalId);
       let contentData = await calcData(
@@ -265,7 +297,7 @@ class HomeScreen extends React.Component {
       this.setState({contentData: contentData});
       /**上传轨迹点 */
       uploadPoint(
-        this.props.user.user_uuid ? this.props.user.user_uuid : 'test08',
+        this.props.user.uuid ? this.props.user.uuid : 'test08',
         Date.parse(new Date()) / 1000,
         this.state.location.longitude,
         this.state.location.latitude,
@@ -281,6 +313,7 @@ class HomeScreen extends React.Component {
     console.log('Stopping tracking');
     clearInterval(this.state.intervalId);
     this.props.endTrack();
+    this.state.endTime = Date.parse(new Date()) / 1000;
     this._endRecord(
       this.state.recordId,
       Date.parse(new Date()) / 1000,
@@ -288,7 +321,7 @@ class HomeScreen extends React.Component {
     );
   };
   render() {
-    console.log('Rending Home');
+    // console.log('Rending Home');
     return (
       <>
         <StatusBar
@@ -350,12 +383,18 @@ class HomeScreen extends React.Component {
           <TouchableOpacity
             onPress={this._handlePressMe.bind(this)}
             style={[styles.infoButton]}>
-            <Text>我</Text>
+            <Image
+              style={styles.personImg}
+              source={require('../images/me.png')}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={this._locateOnce.bind(this)}
             style={[styles.locateButton]}>
-            <Text>定位</Text>
+            <Image
+              style={styles.locateImg}
+              source={require('../images/locate.png')}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.startButton}
@@ -486,6 +525,8 @@ const styles = StyleSheet.create({
   bottomPanel: {
     // height: GS.sHeight * 0.7,
   },
+  personImg: {width: GS.sWidth * 0.07, height: GS.sHeight * 0.03},
+  locateImg: {width: GS.sWidth * 0.07, height: GS.sHeight * 0.03},
 });
 
 const mapStateToProps = (state) => ({

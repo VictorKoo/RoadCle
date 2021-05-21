@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import {
   SafeAreaView,
@@ -10,6 +11,7 @@ import {
   Keyboard,
   Alert,
   ToastAndroid,
+  Image,
 } from 'react-native';
 import {TextInput} from 'react-native-paper';
 import {connect} from 'react-redux';
@@ -18,6 +20,7 @@ import objToQueryString from '../common/ObjToQueryString';
 import Config from '../common/config.json';
 import {updateUser} from '../../redux/actions/userAction';
 import {updateToken} from '../../redux/actions/authAction';
+import md5 from 'md5';
 
 class Login extends React.Component {
   static navigationOptions = {
@@ -30,6 +33,7 @@ class Login extends React.Component {
       tips: '',
       token: '',
       tipsColor: Config.orangeL,
+      pswVisible: false,
       user: {
         uuid: '',
         name: '',
@@ -38,110 +42,80 @@ class Login extends React.Component {
     };
     // updateUser(initialState);
   }
-  /**Save user name to reducer */
-  _saveUser = () => {
-    console.log('Saving user');
-    fetch('http://xuedong.online:8088/u/' + this.props.user.uuid, {
-      method: 'GET',
+  /**
+   *
+   * @param {String} name
+   * @param {String} password
+   */
+  _logup = (name, password) => {
+    fetch('http://xuedong.online:8088/auth/pswsignup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name,
+        password: md5(password),
+      }),
       headers: {
-        Authorization: this.props.token,
+        'Content-Type': 'application/json;charset=utf-8',
       },
     })
       .then((res) => {
-        if (res.status !== 200) {
-          ToastAndroid.show('系获取用户信息出错', ToastAndroid.SHORT);
-          console.log('user info fail ' + res.status);
-        } else {
-          res.json(() => {
-            console.log('user info ' + res[0].uuid);
-            // this.state.user = res[0];
-            this.props.updateUser(res[0]);
-            // console.log('user: ' + res[0]);
+        if (res.ok) {
+          res.json().then((json) => {
+            this.setState({user: json});
           });
+          Alert.alert('注册成功', '\n' + this.state.user.name, [
+            {
+              text: '登录',
+              onPress: () => {
+                this.props.navigation.navigate('Login');
+              },
+            },
+          ]);
+          return true;
+        } else {
+          Alert.alert('注册失败', '请重新输入\n' + res.status, [
+            {text: '好', onPress: () => {}},
+          ]);
         }
       })
-      .catch((error) => {
-        console.log(error);
+      .catch((e) => {
+        console.warn(e);
       });
-    this.props.updateUser(this.state.user);
+    return false;
   };
-  /**Fecth user infomation */
-  _fetchUserUUIDByName = () => {
-    fetch('http://xuedong.online:8088/u/n/' + this.state.user.name, {
-      method: 'GET',
-    })
-      .then((res) => res.text())
-      .then((res) => {
-        console.log('get uuid by name ' + res);
-        this.state.user.uuid = res;
-        this.state.user.online = 1;
-        this.props.updateUser(this.state.user);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  };
-  /**Fetch token and save */
-  _fetchToken = () => {
-    const queryString =
-      'uuid=' + this.props.user.uuid + '&psw=' + this.state.user.password;
-    console.log(queryString);
-    fetch('http://xuedong.online:8088/auth/pswlogin?' + queryString, {
-      method: 'GET',
-    })
-      .then((res) => {
-        if (res.status !== 200) {
-          console.log('fetch token fail ' + res.status);
-          this._handleLoginFail(res.message);
-          this.props.updateToken('');
-        } else {
-          res.text().then((t) => {
-            console.log('fetch token');
-            console.log('Token: ' + t);
-            this.props.updateToken(t);
-            this._handleLoginSuccess();
-          });
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        this._handleLoginFail(error);
-      });
-  };
-  _handleLoginFail = (msg = '') => {
-    Alert.alert('登录失败', '请重新输入\n' + msg, [
-      {text: '好', onPress: () => {}},
-    ]);
-  };
-  _handleLoginSuccess = () => {
-    ToastAndroid.show('登录成功', ToastAndroid.SHORT);
-    this.props.navigation.navigate('Home');
-    this._saveUser();
-  };
-  _handlePressLogin = () => {
-    this._fetchUserUUIDByName();
-    this._fetchToken();
+  _handlePressLogup = () => {
+    ToastAndroid.show('稍侯', ToastAndroid.SHORT);
+    let boo = false;
+    boo = this._logup(this.state.user.name, this.state.user.password);
+    if (boo) {
+      ToastAndroid.show('注册成功', ToastAndroid.SHORT);
+    } else {
+    }
   };
   render() {
     return (
       <>
         <StatusBar backgroundColor={GS.global.backgroundColor + '88'} />
         <View style={[styles.container]}>
-          <View style={styles.leftCol}>
+          <View style={styles.leftRow}>
             <TouchableOpacity
               onPress={() => {
                 this.props.navigation.goBack();
               }}
               style={[styles.buttonBack]}>
-              <Text>Back</Text>
+              <Image
+                style={styles.buttonBackImg}
+                source={require('../images/back.png')}
+              />
             </TouchableOpacity>
           </View>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.rightCol}>
-              {/* <Text style={[styles.tips, {color: this.state.tipsColor}]}> */}
-              {/* {this.state.user.name + this.state.user.password} */}
-              {/* {this.state.tips} */}
-              {/* </Text> */}
+            <View style={styles.rightRow}>
+              <Text style={styles.h1}>注册</Text>
+              <Text style={[styles.tips, {color: this.state.tipsColor}]}>
+                {/* {this.state.user.name + this.state.user.password} */}
+                {this.state.tips}
+              </Text>
               {/*  */}
               {/* <Text> */}
               {/* {this.props.user.uuid} */}
@@ -155,28 +129,41 @@ class Login extends React.Component {
                 onChangeText={(text) => {
                   this.state.user.name = text;
                 }}
-                onBlur={() => {
-                  this._fetchUserUUIDByName.bind(this);
-                }}
+                onBlur={() => {}}
               />
-              <TextInput
-                // placeholder=""
-                mode="outlined"
-                style={styles.pswInput}
-                label="密码"
-                // value={this.state.user.password}
-                secureTextEntry={true}
-                onChangeText={(text) => {
-                  this.state.user.password = text;
+              <View style={styles.pswRow}>
+                <TextInput
+                  // placeholder=""
+                  mode="outlined"
+                  style={styles.pswInput}
+                  label="密码"
+                  // value={this.state.user.password}
+                  secureTextEntry={!this.state.pswVisible}
+                  onChangeText={(text) => {
+                    this.state.user.password = text;
+                  }}
+                />
+                <TouchableWithoutFeedback
+                  onPress={() => {
+                    this.setState({pswVisible: !this.state.pswVisible});
+                  }}>
+                  {this.state.pswVisible ? (
+                    <Image
+                      style={styles.eyeImg}
+                      source={require('../images/eye.png')}
+                    />
+                  ) : (
+                    <Image
+                      style={styles.eyeImg}
+                      source={require('../images/eye-closed.png')}
+                    />
+                  )}
+                </TouchableWithoutFeedback>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  this._handlePressLogup();
                 }}
-              />
-              <TouchableOpacity
-                onPress={this._handlePressLogin.bind(this)}
-                style={[styles.loginButton]}>
-                <Text>登录</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={this._handlePressLogin.bind(this)}
                 style={[styles.logupButton]}>
                 <Text>注册</Text>
               </TouchableOpacity>
@@ -192,21 +179,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: StatusBar.currentHeight,
-    flexDirection: 'row',
+    flexDirection: 'column',
   },
-  leftCol: {
-    flex: 3,
+  leftRow: {
+    flex: 1,
     // backgroundColor: 'orange',
   },
-  rightCol: {
-    flex: 7,
+  rightRow: {
+    flex: 8,
     backgroundColor: Config.orangeL + '11',
     flexDirection: 'column',
     alignItems: 'stretch',
     justifyContent: 'center',
   },
   buttonBack: {
-    top: GS.sHeight * 0.08,
+    top: GS.sHeight * 0.07,
     left: GS.sWidth * 0.08,
     // position: 'absolute',
     width: GS.sWidth * 0.15,
@@ -216,15 +203,30 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color,
     borderRadius: 20,
   },
+  buttonBackImg: {
+    width: 25,
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  h1: {
+    fontSize: 45,
+    // top: GS.sHeight * 0.0,
+    textAlign: 'center',
+  },
   nameInput: {
     height: 60,
     justifyContent: 'center',
     margin: 10,
   },
   pswInput: {
-    height: 60,
+    width: GS.sWidth * 0.83,
     justifyContent: 'center',
     margin: 10,
+  },
+  pswRow: {
+    height: 60,
+    flexDirection: 'row',
   },
   tips: {
     textAlign: 'center',
@@ -232,8 +234,8 @@ const styles = StyleSheet.create({
     fontSize: 30,
     // color: this.state.tipsColor,
   },
-  loginButton: {
-    top: GS.sHeight * 0.63,
+  logupButton: {
+    top: GS.sHeight * 0.7,
     right: GS.sWidth * 0.05,
     position: 'absolute',
     width: GS.sWidth * 0.3,
@@ -243,16 +245,11 @@ const styles = StyleSheet.create({
     backgroundColor: GS.global.color,
     borderRadius: 20,
   },
-  logupButton: {
-    top: GS.sHeight * 0.63,
-    right: GS.sWidth * 0.38,
-    position: 'absolute',
-    width: GS.sWidth * 0.3,
-    height: GS.sHeight * 0.05,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: GS.global.color + '88',
-    borderRadius: 20,
+  eyeImg: {
+    width: 21,
+    height: 14,
+    alignSelf: 'center',
+    marginRight: 10,
   },
 });
 
