@@ -1,4 +1,5 @@
 import {objToQueryString} from '../common/ObjToQueryString';
+import {Alert} from 'react-native';
 /**
  * @file 轨迹点处理工具
  * @author Victor Koo
@@ -25,6 +26,7 @@ export let uploadPoint = (
   _height = 0.0,
   _radius = 0.0,
 ) => {
+  console.log('Upload point');
   var formData = new FormData();
   formData.append('ak', 'm5yRqRW0RlGoZCPL5PX8hS1dTpRZ7AAs');
   formData.append('service_id', 226802);
@@ -114,6 +116,16 @@ export let calcDistantByLL = (lat1, lng1, lat2, lng2, alt1 = 0, alt2 = 0) => {
 };
 
 /**
+ * 由速度计算距离
+ * @param {Number} interval (second)
+ * @param {Number} speed (metre per second)
+ * @returns mileage (metre)
+ */
+export let calcDistantBySpeed = (interval, speed) => {
+  return interval * speed;
+};
+
+/**
  * 获取距离
  * @param {String} name
  * @param {Number} start_time
@@ -144,4 +156,97 @@ export let getDistance = (name, start_time, end_time) => {
     .catch((error) => {
       console.warn(error);
     });
+};
+
+/**
+ * 结束记录标记
+ * @param {Number} recordId
+ * @param {Number} endTime (s)
+ * @param {String} token
+ */
+export let endRecord = (recordId, endTime, token) => {
+  fetch('http://xuedong.online:8088/r/' + recordId ? recordId : '', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8',
+      Authorization: token ? token : '',
+    },
+    body: JSON.stringify({
+      end_time: endTime,
+    }),
+  })
+    .then((res) => {
+      if (res.status !== 200) {
+        console.error(res);
+      } else {
+        res.json().then((json) => {
+          return json.record_id;
+        });
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+};
+
+/**开始时间戳 */
+let startTime = 0;
+
+/**
+ * 运动信息计算
+ * @param {Number} interval (ms)
+ * @param {Number} speed (mps)
+ * @param {Number} mileage (km)
+ * @param {Number} altitude (m)
+ * @param {Number} timestamp (s)
+ * @param {Boolean} isStart Is it start point?
+ * @returns {Object} data
+ */
+export let calcData = (
+  interval,
+  speed,
+  mileage,
+  altitude,
+  timestamp,
+  isStart = false,
+) => {
+  // console.log('Calc data: ' + isStart);
+  let data = {
+    /**速度 */
+    speed: 0,
+    /**里程 */
+    mileage: 0,
+    /**时间 */
+    duration: '00:00',
+    /**爬升 */
+    climb: 0,
+    /**平均速度 */
+    averageSpeed: 0,
+  };
+  let startAltitude = 0;
+  let timeDur = Math.abs(timestamp / 1000 - startTime);
+  // let timeDur = z + interval / 1000;
+  // z = timeDur;
+  let s = 0;
+  let m = 0;
+  s = timeDur % 60;
+  m = parseInt(timeDur / 60, 10);
+  if (isStart) {
+    timeDur = 0;
+    startTime = timestamp / 1000;
+    startAltitude = altitude;
+    return data;
+  }
+  data.speed = Math.round(speed * 10) / 10;
+  data.mileage =
+    Math.round(
+      (calcDistantBySpeed(interval / 1000, speed) / 1000 + mileage) * 10,
+    ) / 10;
+  data.duration =
+    (m < 10 ? '0' + String(m) : m >= 1000 ? (m = '999') : String(m)) +
+    ':' +
+    (s < 10 ? '0' + String(s) : String(s));
+  data.climb = altitude - startAltitude;
+  data.averageSpeed = mileage / timeDur;
+  return data;
 };

@@ -42,7 +42,7 @@ class BottomPanel extends React.Component {
     };
   }
   render() {
-    // let {children, style} = this.props;
+    const {data} = this.props;
     return (
       <SwipeablePanel
         {...this.props}
@@ -56,25 +56,17 @@ class BottomPanel extends React.Component {
         <View style={styles.container}>
           <Text style={styles.sign}>下滑停止记录</Text>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText}>
-              {this.state.contentData.speed}
-            </Text>
-            <Text style={styles.unitText}>速度 kmph</Text>
-            <Text style={styles.contentText}>
-              {this.state.contentData.mileage}
-            </Text>
+            <Text style={styles.contentText}>{data.speed}</Text>
+            <Text style={styles.unitText}>速度 mps</Text>
+            <Text style={styles.contentText}>{data.mileage}</Text>
             <Text style={styles.unitText}>里程 km</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>
-              {this.state.contentData.averageSpeed}
-            </Text>
-            <Text style={styles.unitText2}>平均速度 kmph</Text>
+            <Text style={styles.contentText2}>{data.averageSpeed}</Text>
+            <Text style={styles.unitText2}>平均速度 mps</Text>
           </View>
           <View style={styles.bottomPanelCol}>
-            <Text style={styles.contentText2}>
-              {this.state.contentData.duration}
-            </Text>
+            <Text style={styles.contentText2}>{data.duration}</Text>
             <Text style={styles.unitText2}>时间</Text>
           </View>
         </View>
@@ -105,6 +97,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 30,
     marginTop: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ff8c00',
   },
   contentText: {
     flex: 1,
@@ -112,8 +106,9 @@ const styles = StyleSheet.create({
     alignContent: 'flex-end',
     justifyContent: 'flex-end',
     textAlign: 'right',
-    fontSize: 100,
+    fontSize: 70,
     fontFamily: 'GOST',
+    color: '#ff8c00',
   },
   unitText: {
     flex: 0.2,
@@ -129,7 +124,7 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    fontSize: 100,
+    fontSize: 75,
     marginLeft: 0,
   },
   unitText2: {

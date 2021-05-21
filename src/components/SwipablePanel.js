@@ -5,7 +5,7 @@ import React from 'react';
 
 import reactNative from 'react-native';
 
-import Content from './Content';
+// import Content from './Content';
 
 function _extends() {
   _extends =

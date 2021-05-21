@@ -27,7 +27,12 @@ import GS from '../common/GlobalStyles';
 import BottomPanel from '../components/BottomPanel';
 import Config from '../common/config.json';
 import {endTrack, startTrack, addPoint} from '../../redux/actions/trackAction';
-import {uploadPoint} from '../services/trackUtil';
+import {
+  uploadPoint,
+  calcDistantBySpeed,
+  calcData,
+  endRecord,
+} from '../services/trackUtil';
 
 // Only for iOS
 BaiduMapManager.initSDK('G3QhPwGwHOOp6WYZhTtvIDDNxFfoCsVA');
@@ -45,6 +50,8 @@ class HomeScreen extends React.Component {
     this.state = {
       /**定位监听器ID */
       locatorId: '',
+      /**定时器ID */
+      intervalId: 0,
       /**地图中心点 */
       center: {
         latitude: 22.366718,
@@ -87,7 +94,7 @@ class HomeScreen extends React.Component {
         /**里程 */
         mileage: 0,
         /**时间 */
-        duration: '00:00',
+        duration: '00:03',
         /**爬升 */
         climb: 0,
         /**平均速度 */
@@ -106,6 +113,14 @@ class HomeScreen extends React.Component {
   _handlePressStart() {
     this.props.startTrack();
     console.log(this.props.isTracking);
+    this.state.contentData = calcData(
+      1000,
+      this.state.location.speed,
+      this.state.contentData.mileage,
+      this.state.location.altitude,
+      Date.parse(new Date()),
+      true,
+    );
     this._startTrack();
   }
   /**Locate once */
@@ -145,7 +160,7 @@ class HomeScreen extends React.Component {
   };
   /**
    * 在线创建记录，获取记录ID并保存在组件state
-   * @param {Number=} start_time 开始时间
+   * @param {Number=} start_time 开始时间 (s)
    * @return {String} record ID
    */
   _createRecord = (start_time = this.state.startTime) => {
@@ -177,35 +192,7 @@ class HomeScreen extends React.Component {
         console.log(error);
       });
   };
-  /**
-   * 结束记录标记
-   * @param {Number=} recordId
-   * @param {Number=} endTime
-   */
-  _endRecord = (
-    recordId = this.state.recordId,
-    endTime = this.state.endTime,
-  ) => {
-    fetch('http://xuedong.online:8088/r/' + recordId, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json;charset=utf-8',
-        Authorization: this.props.token ? this.props.token : '',
-      },
-      body: JSON.stringify({
-        end_time: endTime,
-      }),
-    })
-      .then((res) =>
-        res.json().then((json) => {
-          return json.record_id;
-        }),
-      )
-      .catch((error) => {
-        console.log(error);
-      });
-  };
-  /**本地持久保存轨迹 */
+  /**本地持久保存轨迹并计算数据 */
   _startTrack = () => {
     console.log('Tracking');
     if (this.state.location.accuracy > 50) {
@@ -218,13 +205,33 @@ class HomeScreen extends React.Component {
         },
       ]);
     }
-    this.state.recordId = this._createRecord(this.state.location.timestamp);
+    // 创建记录
+    this.state.recordId = this._createRecord(
+      this.state.location.timestamp / 1000,
+    );
+    this.state.intervalId = setInterval(async () => {
+      console.log('Interval calc data: ' + this.state.intervalId);
+      let contentData = await calcData(
+        1000,
+        this.state.location.speed,
+        this.state.contentData.mileage,
+        this.state.location.altitude,
+        Date.parse(new Date()),
+        false,
+      );
+      this.setState({contentData: contentData});
+    }, 1000);
   };
   /**停止记录 */
   _stopTracking = () => {
     console.log('Stopping tracking');
+    clearInterval(this.state.intervalId);
     this.props.endTrack();
-    this._endRecord(this.state.recordId, this.state.location.timestamp);
+    endRecord(
+      this.state.recordId,
+      this.state.location.timestamp / 1000,
+      this.props.token ? this.props.token : '',
+    );
   };
   render() {
     console.log('Rending Home');
@@ -283,7 +290,7 @@ class HomeScreen extends React.Component {
             isActive={this.props.isTracking}
             onClose={() => {
               this.props.endTrack();
-              this._stopTracking.bind(this);
+              this._stopTracking();
             }}
           />
           <TouchableOpacity
@@ -310,7 +317,7 @@ class HomeScreen extends React.Component {
    */
   async componentDidMount() {
     console.log('Started');
-    this._locateOnce.bind(this);
+    this._locateOnce();
     try {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -327,7 +334,7 @@ class HomeScreen extends React.Component {
           {
             text: '确认',
             onPress: () => {
-              this._stopTracking.bind(this);
+              this._stopTracking();
             },
           },
         ]);
@@ -335,6 +342,7 @@ class HomeScreen extends React.Component {
     } catch (err) {
       console.warn(err);
     }
+    /**Begin watching position */
     this.state.locatorId = navigator.geolocation.watchPosition(
       (location) => {
         /**百度坐标系 */
@@ -354,7 +362,7 @@ class HomeScreen extends React.Component {
             tracks: [...this.state.tracks, this.state.location],
           });
           uploadPoint(
-            this.props.user.user_uuid,
+            this.props.user.user_uuid ? this.props.user.user_uuid : 'test08',
             Number(this.state.location.timestamp) / 1000,
             this.state.location.longitude,
             this.state.location.latitude,
@@ -375,7 +383,7 @@ class HomeScreen extends React.Component {
       {
         enableHighAccuracy: true,
         timeout: 20000,
-        maximumAge: 0,
+        maximumAge: 1000,
         distanceFilter: 0,
       },
     );

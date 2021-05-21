@@ -1,9 +1,7 @@
 import crypto from 'crypto';
 import Buffer from 'buffer';
 
-export const authPassword = (userName, psw) => {
-
-};
+export const authPassword = (userName, psw) => {};
 
 /**
  * Hash方法
