@@ -10,8 +10,38 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "^4.11.2",
+    "@material/fab": "^10.0.0",
+    "@react-native-async-storage/async-storage": "github:react-native-async-storage/async-storage",
+    "@react-native-community/geolocation": "^2.0.2",
+    "@react-native-community/masked-view": "^0.1.10",
+    "@react-navigation/native": "github:react-navigation/native",
+    "axios": "^0.21.1",
+    "buffer": "^6.0.3",
+    "crypto": "^1.0.1",
+    "gcoord": "^0.3.1",
+    "info": "0.0.6-beta.0",
+    "md5": "^2.3.0",
     "react": "16.13.1",
-    "react-native": "0.63.4"
+    "react-dom": "^17.0.1",
+    "react-native": "^0.63.4",
+    "react-native-async-storage": "0.0.1",
+    "react-native-baidu-map": "^1.0.37",
+    "react-native-gesture-handler": "^1.10.3",
+    "react-native-md5": "^1.0.0",
+    "react-native-paper": "^4.7.2",
+    "react-native-safe-area-context": "^3.2.0",
+    "react-navigation": "^4.4.4",
+    "react-navigation-native": "0.0.0",
+    "react-navigation-stack": "^2.10.4",
+    "react-redux": "^7.2.3",
+    "redux": "^4.0.5",
+    "redux-logger": "^3.0.6",
+    "redux-persist": "^6.0.0",
+    "redux-thunk": "^2.3.0",
+    "rn-swipeable-panel": "^1.2.5",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.8.4",
@@ -25,5 +55,10 @@
   },
   "jest": {
     "preset": "react-native"
+  },
+  "rnpm": {
+    "assets": [
+      "./assets/fonts"
+    ]
   }
 }
